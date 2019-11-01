@@ -1,0 +1,1 @@
+If Card suits symbols are showing up as "?".  In the Launch Configuration dialog, choose the output encoding in the Common tab and choose UTF-8.
