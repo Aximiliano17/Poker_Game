@@ -65,7 +65,7 @@ public class PlayPanel extends JPanel {
 					removeAll();
 					Deck deck = new Deck();
 					dealCards(deck);
-					switchCards(deck);
+					turn(deck);
 					validate();
 					repaint();
 				}
@@ -86,46 +86,30 @@ public class PlayPanel extends JPanel {
 		}
 	}
 
-	// Asks players one by one which cards they want to switch
-	public void switchCards(Deck deck) {
-		removeAll();
-		if (player < allowedPlayers.size()) {
-			setLayout(new GridBagLayout());
-			GridBagConstraints gbc = new GridBagConstraints();
-			gbc.gridwidth = GridBagConstraints.REMAINDER;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-
-			JLabel message = new JLabel("It is " + allowedPlayers.get(player).getName() + "'s turn!");
-			JLabel message2 = new JLabel("You have been dealt the following cards. Choose to switch or skip.");
-			JButton next = new JButton("Next");
-			add(message, gbc);
-			add(message2, gbc);
-
-			// Make a JPanel for each card.
-			for (Card card : allowedPlayers.get(player).getHand()) {
-				JPanel hand = cardPanel(card);
-				add(hand, gbc);
+	public void dealCards(Deck deck) {
+		// Assign each player cards from the deck
+		for (Player p : allowedPlayers) {
+			while (p.getHand().size() < 5) {
+				p.setHand(deck.dealCard());
 			}
-			next.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					player++;
-					switchCards(deck);
-					validate();
-					repaint();
-				}
-			});
-			add(next);
-
-		} else if (player == allowedPlayers.size()) {
-			player = 0;
-			dealCards(deck);
-			turn();
 		}
 	}
 
-	// This method asks each player to check/fold/raise, and calls these
-	// behaviors.
-	public void turn() {
+	
+	// Depending on turn, ante or switchcards will be called
+	public void turn(Deck deck) {
+		if(game.getTurn()==0)
+		{
+			
+		}
+		else if(game.getTurn()==1)
+		{
+			switchCards(deck);
+		}
+		else if(game.getTurn()==2)
+		{
+			
+		}
 		setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
@@ -200,6 +184,42 @@ public class PlayPanel extends JPanel {
 			turn();
 		}
 	}
+	// Asks players one by one which cards they want to switch
+		public void switchCards(Deck deck) {
+			removeAll();
+			if (player < allowedPlayers.size()) {
+				setLayout(new GridBagLayout());
+				GridBagConstraints gbc = new GridBagConstraints();
+				gbc.gridwidth = GridBagConstraints.REMAINDER;
+				gbc.fill = GridBagConstraints.HORIZONTAL;
+
+				JLabel message = new JLabel("It is " + allowedPlayers.get(player).getName() + "'s turn!");
+				JLabel message2 = new JLabel("You have been dealt the following cards. Choose to switch or skip.");
+				JButton next = new JButton("Next");
+				add(message, gbc);
+				add(message2, gbc);
+
+				// Make a JPanel for each card.
+				for (Card card : allowedPlayers.get(player).getHand()) {
+					JPanel hand = cardPanel(card);
+					add(hand, gbc);
+				}
+				next.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						player++;
+						switchCards(deck);
+						validate();
+						repaint();
+					}
+				});
+				add(next);
+
+			} else if (player == allowedPlayers.size()) {
+				player = 0;
+				dealCards(deck);
+				turn();
+			}
+		}
 
 	public void displayWinner() {
 		removeAll();
@@ -281,18 +301,21 @@ public class PlayPanel extends JPanel {
 		for (Player player : allowedPlayers) {
 			Ranking.evaluateHand(player);
 		}
-		HandComparator c = new HandComparator();
-		Collections.sort(allowedPlayers, c);
-		return allowedPlayers.get(allowedPlayers.size() - 1);
-	}
+		Collections.sort(allowedPlayers, new Comparator<Player>() {
+			public int compare(Player one, Player two) {
+				for (HandRanking a : one.getHandValue().keySet()) {
+					for (HandRanking b : two.getHandValue().keySet()) {
+						int result = a.ordinal() - b.ordinal();
+						if (result != 0)
+							return result;
+						return one.getHandValue().get(a) - two.getHandValue().get(b);
+					}
+				}
+				return 0;
 
-	public void dealCards(Deck deck) {
-		// Assign each player cards from the deck
-		for (Player p : allowedPlayers) {
-			while (p.getHand().size() < 5) {
-				p.setHand(deck.dealCard());
 			}
-		}
+		});
+		return allowedPlayers.get(allowedPlayers.size() - 1);
 	}
 
 	private void returnMain() {
@@ -418,21 +441,6 @@ public class PlayPanel extends JPanel {
 			turn();
 			validate();
 			repaint();
-		}
-	}
-
-	public class HandComparator implements Comparator<Player> {
-		public int compare(Player one, Player two) {
-			for (HandRanking a : one.getHandValue().keySet()) {
-				for (HandRanking b : two.getHandValue().keySet()) {
-					int result = a.ordinal() - b.ordinal();
-					if (result != 0)
-						return result;
-					return one.getHandValue().get(a) - two.getHandValue().get(b);
-				}
-			}
-			return 0;
-
 		}
 	}
 }
