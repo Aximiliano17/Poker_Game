@@ -64,14 +64,12 @@ public class PlayPanel extends JPanel {
 				public void actionPerformed(ActionEvent e) {
 					removeAll();
 					Deck deck = new Deck();
-					dealCards(deck);
 					turn(deck);
 					validate();
 					repaint();
 				}
 			});
 			add(continueButton);
-
 			returnMain();
 
 		} else if (players.size() == 1) {
@@ -95,21 +93,52 @@ public class PlayPanel extends JPanel {
 		}
 	}
 
-	
 	// Depending on turn, ante or switchcards will be called
 	public void turn(Deck deck) {
-		if(game.getTurn()==0)
-		{
-			
-		}
-		else if(game.getTurn()==1)
-		{
+		switch (game.getTurn()) {
+		case 0:
+			ante(deck);
+			break;
+		case 1:
+			dealCards(deck);
 			switchCards(deck);
+			break;
+		case 2:
+			playerTurn(deck);
+			break;
+		case 3:
+			assert false;
+			break;
 		}
-		else if(game.getTurn()==2)
-		{
-			
+	}
+
+	public void ante(Deck deck) {
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridwidth = GridBagConstraints.REMAINDER;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		for (Player p : allowedPlayers) {
+			p.substractMoney(10);
+			game.setPot(game.getPot() + 10);
 		}
+		JLabel anteMess = new JLabel("An ante of 10 has been take from each player and added to the pot");
+		add(anteMess, gbc);
+		JButton continueButton = new JButton("Continue");
+		add(continueButton, gbc);
+		anteMess.setAlignmentX(Component.CENTER_ALIGNMENT);
+		continueButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+		continueButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				removeAll();
+				game.increaseTurn();
+				turn(deck);
+				validate();
+				repaint();
+			}
+		});
+	}
+
+	public void playerTurn(Deck deck) {
 		setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
@@ -143,7 +172,7 @@ public class PlayPanel extends JPanel {
 				JButton call = new JButton("Call");
 				call.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
-						call();
+						call(deck);
 					}
 				});
 				buttons.add(call);
@@ -155,7 +184,7 @@ public class PlayPanel extends JPanel {
 					public void actionPerformed(ActionEvent e) {
 						allowedPlayers.get(player).setTurn(true);
 						player++;
-						turn();
+						playerTurn(deck);
 						validate();
 						repaint();
 					}
@@ -166,7 +195,7 @@ public class PlayPanel extends JPanel {
 			raise.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					raise();
+					raise(deck);
 				}
 			});
 			buttons.add(raise);
@@ -174,52 +203,54 @@ public class PlayPanel extends JPanel {
 			fold.addActionListener(new ActionListener() {
 				@Override
 				public void actionPerformed(ActionEvent e) {
-					fold();
+					fold(deck);
 				}
 			});
 			buttons.add(fold);
 			add(buttons, gbc);
 		} else {
 			player++;
-			turn();
+			playerTurn(deck);
 		}
 	}
+
 	// Asks players one by one which cards they want to switch
-		public void switchCards(Deck deck) {
-			removeAll();
-			if (player < allowedPlayers.size()) {
-				setLayout(new GridBagLayout());
-				GridBagConstraints gbc = new GridBagConstraints();
-				gbc.gridwidth = GridBagConstraints.REMAINDER;
-				gbc.fill = GridBagConstraints.HORIZONTAL;
+	public void switchCards(Deck deck) {
+		removeAll();
+		if (player < allowedPlayers.size()) {
+			setLayout(new GridBagLayout());
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
 
-				JLabel message = new JLabel("It is " + allowedPlayers.get(player).getName() + "'s turn!");
-				JLabel message2 = new JLabel("You have been dealt the following cards. Choose to switch or skip.");
-				JButton next = new JButton("Next");
-				add(message, gbc);
-				add(message2, gbc);
+			JLabel message = new JLabel("It is " + allowedPlayers.get(player).getName() + "'s turn!");
+			JLabel message2 = new JLabel("You have been dealt the following cards. Choose to switch or skip.");
+			JButton next = new JButton("Next");
+			add(message, gbc);
+			add(message2, gbc);
 
-				// Make a JPanel for each card.
-				for (Card card : allowedPlayers.get(player).getHand()) {
-					JPanel hand = cardPanel(card);
-					add(hand, gbc);
-				}
-				next.addActionListener(new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
-						player++;
-						switchCards(deck);
-						validate();
-						repaint();
-					}
-				});
-				add(next);
-
-			} else if (player == allowedPlayers.size()) {
-				player = 0;
-				dealCards(deck);
-				turn();
+			// Make a JPanel for each card.
+			for (Card card : allowedPlayers.get(player).getHand()) {
+				JPanel hand = cardPanel(card);
+				add(hand, gbc);
 			}
+			next.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					player++;
+					switchCards(deck);
+					validate();
+					repaint();
+				}
+			});
+			add(next);
+
+		} else if (player == allowedPlayers.size()) {
+			player = 0;
+			dealCards(deck);
+			game.increaseTurn();
+			turn(deck);
 		}
+	}
 
 	public void displayWinner() {
 		removeAll();
@@ -347,7 +378,7 @@ public class PlayPanel extends JPanel {
 		allowedPlayers.clear();
 	}
 
-	public void raise() {
+	public void raise(Deck deck) {
 		removeAll();
 		JLabel message = new JLabel("Enter amount to raise");
 		JTextField amount = new JTextField(10);
@@ -373,14 +404,14 @@ public class PlayPanel extends JPanel {
 						allowedPlayers.get(player).setCurrentBet(game.getWager());
 						allowedPlayers.get(player).setTurn(true);
 						player++;
-						turn();
+						turn(deck);
 						validate();
 						repaint();
 
 					} else {
 						JLabel warning = new JLabel("Cant raise more than what you have. Make another choice");
 						add(warning);
-						turn();
+						turn(deck);
 						validate();
 						repaint();
 					}
@@ -388,7 +419,7 @@ public class PlayPanel extends JPanel {
 				} catch (NumberFormatException ex) {
 					JLabel warning = new JLabel("Please dont use words");
 					add(warning);
-					turn();
+					turn(deck);
 					validate();
 					repaint();
 				}
@@ -399,7 +430,7 @@ public class PlayPanel extends JPanel {
 		repaint();
 	}
 
-	public void fold() {
+	public void fold(Deck deck) {
 		removeAll();
 		JLabel message = new JLabel(allowedPlayers.get(player).getName() + " has folded");
 		add(message);
@@ -409,7 +440,7 @@ public class PlayPanel extends JPanel {
 			if (player >= 1) {
 				player--;
 			}
-			turn();
+			turn(deck);
 			validate();
 			repaint();
 		}
@@ -420,7 +451,7 @@ public class PlayPanel extends JPanel {
 		}
 	}
 
-	public void call() {
+	public void call(Deck deck) {
 		removeAll();
 		int difference = game.getWager() - allowedPlayers.get(player).getCurrentBet();
 
@@ -432,13 +463,13 @@ public class PlayPanel extends JPanel {
 			allowedPlayers.get(player).setCurrentBet(game.getWager());
 			allowedPlayers.get(player).setTurn(true);
 			player++;
-			turn();
+			turn(deck);
 			validate();
 			repaint();
 		} else {
 			JLabel message = new JLabel("You do not have enough money.Chosse another option");
 			add(message);
-			turn();
+			turn(deck);
 			validate();
 			repaint();
 		}
