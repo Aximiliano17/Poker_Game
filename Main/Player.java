@@ -2,6 +2,7 @@ package Main;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,8 +12,9 @@ public class Player {
 	private int currentBet;
 	//Stores the type of hand they have such as flush or pair, and a tie breaker integer.
 	private Map<HandRanking,Integer> handValue=new HashMap<>();
-	private boolean turn = false;//This allows me to keep track if everyone has completed their turn.
+	private boolean turn = false;//This allows me to keep track if the player has already gone thrugh its turn, or if someone raised and needs a turn again.
 	private ArrayList<Card> hand = new ArrayList<Card>(5);
+	
 	// Constructors. For simplicity purpose, every time a player is added, they have
 	// a default amount of money.
 	public Player(String initialName) {
@@ -78,9 +80,10 @@ public class Player {
 		this.turn = newTurn;
 	}
 	//___________________OTHER METHODS_____________
-	public void substractMoney(int money)
+	public int substractMoney(int money)
 	{
 		this.money=this.money-money;
+		return money;
 	}
 	public void addMoney(int money)
 	{
@@ -99,6 +102,7 @@ public class Player {
 	public void clearHand()
 	{
 		hand.clear();
+		handValue.clear();
 	}
 	public void clearTurn()
 	{
