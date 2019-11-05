@@ -1,1 +1,34 @@
 If Card suits symbols are showing up as "?".  In the Launch Configuration dialog, choose the output encoding in the Common tab and choose UTF-8.
+
+Note-There are more details about the game as comments throughout the code.
+
+A Poker Game designed with swing.
+
+PokerGame Class
+Is the game itself, provides the JFrame as well as stores the players, and allowedPlayers. Keeps track of the money,
+think about it as the table itself. I also use this class to save data and read the data.
+
+Card Class
+A Card is represented by 2 Enums, one for the suits and another for the ranks. 
+
+Deck Class
+Was implemented as a singleton, since i need the deck to stay in memory. The Deck creates the 52 Card objects and then shuffles them.
+
+Ranking Class
+Used entirely for ranking the hand of each player, it provides an enum for the type of hand such as one pair, two pairs etc,
+and it also provides an integer to represent the value of the high card in case of a tie. The enum type and the integer are both stored
+in a Player map variable called handValue.
+
+Player Class
+int currentBet-Keeps track of how much money each player has bet in that round. When someone raises and the player wants to call again,
+i get the difference from the raise to the currentBet.
+boolean turn-is used to keep track if the players needs a turn, or if someone has raised, then they get another turn.
+
+MenuPane, AddPanel, RemovePanel, PlayerPanel Classes
+Implemented each different menu option and the menu itself as its own class, to make the code more readable.
+
+PlayPanel Class
+Is where the actual turns happen. It starts with an ante where it gets money from each player, then a switchCards turn where each player is
+allowed to switch cards. Then we get into the call/raise/fold turn. When a player folds they automatically gets removed from the
+allowedPlayers array. I keep track of which Player needs a turn by a boolean variable inside of the Player. When a Player raises,
+all the other Players turn changes to false, so we can iterate though each player once again.
