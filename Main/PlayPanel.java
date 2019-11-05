@@ -25,15 +25,15 @@ public class PlayPanel extends JPanel {
 	private List<Player> players;
 	private List<Player> allowedPlayers;
 	// Since clicking a button inside of a loop, I loose control of that loop,I used
-	// this variable to keep tracks of which player i'm currently accessing.
-	public int player;
+	// this variable to keep tracks of which player i'm currently accessing. It is
+	// global because inside of the anonymous classes, it requires to be final.
+	private int player;
 	PokerGame game;
 
 	public PlayPanel(PokerGame game) {
 		this.players = new ArrayList<Player>(game.getPlayers());
 		this.allowedPlayers = new ArrayList<Player>(game.getAllowedPlayers());
 		this.game = game;
-
 		determinePlayers();
 	}
 
@@ -93,7 +93,7 @@ public class PlayPanel extends JPanel {
 		}
 	}
 
-	// Depending on turn, ante or switchcards will be called
+	// Depending on turn, ante, switchcards, or playerTurn will be called
 	public void turn() {
 		switch (game.getTurn()) {
 		case 0:
@@ -112,13 +112,13 @@ public class PlayPanel extends JPanel {
 		}
 	}
 
+	// The ante gets money from each player before they get their cards.
 	public void ante() {
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		for (Player p : allowedPlayers) {
-			p.substractMoney(10);
-			game.setPot(game.getPot() + 10);
+			game.setPot(game.getPot() + p.substractMoney(10));
 		}
 		JLabel anteMess = new JLabel("An ante of 10 has been take from each player and added to the pot");
 		add(anteMess, gbc);
@@ -138,6 +138,44 @@ public class PlayPanel extends JPanel {
 		});
 	}
 
+	// Asks players one by one which cards they want to switch
+	public void switchCards() {
+		removeAll();
+		if (player < allowedPlayers.size()) {
+			setLayout(new GridBagLayout());
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.gridwidth = GridBagConstraints.REMAINDER;
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+
+			JLabel message = new JLabel("It is " + allowedPlayers.get(player).getName() + "'s turn!");
+			JLabel message2 = new JLabel("You have been dealt the following cards. Choose to switch or skip.");
+			JButton next = new JButton("Next");
+			add(message, gbc);
+			add(message2, gbc);
+
+			// Make a JPanel for each card.
+			for (Card card : allowedPlayers.get(player).getHand()) {
+				JPanel hand = cardPanel(card);
+				add(hand, gbc);
+			}
+			next.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					switchCards();
+					validate();
+					repaint();
+				}
+			});
+			add(next);
+
+		} else if (player == allowedPlayers.size()) {
+			player = 0;
+			dealCards();
+			game.increaseTurn();
+			turn();
+		}
+	}
+
+	// The call/raise/fold turn.
 	public void playerTurn() {
 		setLayout(new GridBagLayout());
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -211,44 +249,6 @@ public class PlayPanel extends JPanel {
 		} else {
 			player++;
 			playerTurn();
-		}
-	}
-
-	// Asks players one by one which cards they want to switch
-	public void switchCards() {
-		removeAll();
-		if (player < allowedPlayers.size()) {
-			setLayout(new GridBagLayout());
-			GridBagConstraints gbc = new GridBagConstraints();
-			gbc.gridwidth = GridBagConstraints.REMAINDER;
-			gbc.fill = GridBagConstraints.HORIZONTAL;
-
-			JLabel message = new JLabel("It is " + allowedPlayers.get(player).getName() + "'s turn!");
-			JLabel message2 = new JLabel("You have been dealt the following cards. Choose to switch or skip.");
-			JButton next = new JButton("Next");
-			add(message, gbc);
-			add(message2, gbc);
-
-			// Make a JPanel for each card.
-			for (Card card : allowedPlayers.get(player).getHand()) {
-				JPanel hand = cardPanel(card);
-				add(hand, gbc);
-			}
-			next.addActionListener(new ActionListener() {
-				public void actionPerformed(ActionEvent e) {
-					player++;
-					switchCards();
-					validate();
-					repaint();
-				}
-			});
-			add(next);
-
-		} else if (player == allowedPlayers.size()) {
-			player = 0;
-			dealCards();
-			game.increaseTurn();
-			turn();
 		}
 	}
 
@@ -367,6 +367,7 @@ public class PlayPanel extends JPanel {
 		add(returnButton);
 	}
 
+	// resets all variables when a round is over
 	public void resetGame() {
 		player = 0;
 		game.setPot(0);
@@ -395,8 +396,7 @@ public class PlayPanel extends JPanel {
 					removeAll();
 					int amount2 = Integer.parseInt(amount.getText());
 					if (allowedPlayers.get(player).getMoney() > amount2) {
-						allowedPlayers.get(player).substractMoney(amount2);
-						game.setWager(game.getWager() + amount2);
+						game.setWager(game.getWager() + allowedPlayers.get(player).substractMoney(amount2));
 						game.setPot(game.getPot() + amount2);
 						JLabel mess = new JLabel("Amount betting has been raised to" + game.getWager());
 						add(mess);
@@ -458,8 +458,7 @@ public class PlayPanel extends JPanel {
 		int difference = game.getWager() - allowedPlayers.get(player).getCurrentBet();
 
 		if (allowedPlayers.get(player).getMoney() >= difference) {
-			allowedPlayers.get(player).substractMoney(difference);
-			game.setPot(game.getPot() + difference);
+			game.setPot(game.getPot() + allowedPlayers.get(player).substractMoney(difference));
 			JLabel message = new JLabel(allowedPlayers.get(player).getName() + " has called");
 			add(message);
 			allowedPlayers.get(player).setCurrentBet(game.getWager());
