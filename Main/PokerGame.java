@@ -11,18 +11,20 @@ import javax.swing.JFrame;
 
 public class PokerGame extends JFrame {
 	private List<Player> players = new ArrayList<Player>(6);
-	private List<Player> allowedPlayers = new ArrayList<Player>(6);// only players with money >10 are allowed to play
-	private int pot;
-	private int wager;
+	private List<Player> allowedPlayers = new CircularArrayList<Player>(6);// only players with money >10 are allowed to play
+	private int turnTracker;
+
 	public static void main(String[] args) {
-				PokerGame game = new PokerGame();
-				game.readData();
-				game.add(new MenuPane(game));
-				game.setSize(400, 400);
-				game.setLocationRelativeTo(null);
-				game.setTitle("Poker Game");
-				game.setVisible(true);
+		PokerGame game = new PokerGame();
+		game.readData();
+		game.add(new MenuPane(game));
+		game.setSize(400, 400);
+		game.setLocationRelativeTo(null);
+		game.setTitle("Poker Game");
+		game.setResizable(false);
+		game.setVisible(true);
 	}
+
 	public void readData() {
 		String filename = ("data.txt");
 		Scanner inputStream = null;
@@ -59,28 +61,32 @@ public class PokerGame extends JFrame {
 		}
 		outputStream.close();
 	}
+
 	public List<Player> getPlayers() {
 		return players;
 	}
+
 	public void setPlayers(List<Player> players) {
 		this.players = players;
 	}
+
 	public List<Player> getAllowedPlayers() {
 		return allowedPlayers;
 	}
+
 	public void setAllowedPlayers(List<Player> allowedPlayers) {
 		this.allowedPlayers = allowedPlayers;
 	}
-	public int getPot() {
-		return pot;
+
+	public int getTurn() {
+		return this.turnTracker;
 	}
-	public void setPot(int pot) {
-		this.pot = pot;
+
+	public void increaseTurn() {
+		this.turnTracker++;
 	}
-	public int getWager() {
-		return wager;
+
+	public void resetTracker() {
+		this.turnTracker = 0;
 	}
-	public void setWager(int wager) {
-		this.wager = wager;
-	}
-	}
+}
