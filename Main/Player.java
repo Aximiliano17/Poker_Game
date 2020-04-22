@@ -9,12 +9,10 @@ import java.util.Map;
 public class Player {
 	private String name;
 	private int money;
-	private int currentBet;
 	//Stores the type of hand they have such as flush or pair, and a tie breaker integer.
 	private Map<HandRanking,Integer> handValue=new HashMap<>();
 	//private boolean turn = false;//This allows me to keep track if the player has already gone thrugh its turn, or if someone raised and needs a turn again.
 	private ArrayList<Card> hand = new ArrayList<Card>(5);
-	
 	// Constructors. For simplicity purpose, every time a player is added, they have
 	// a default amount of money.
 	public Player(String initialName) {
@@ -49,17 +47,7 @@ public class Player {
 		}
 		return null;
 	}
-//used to keep track how much a player has bet, in case someone raises
-	public int getCurrentBet()
-	{
-		return this.currentBet;
-	}
-
 	// ________________SETTERS________________________
-	public void setCurrentBet(int currentBet)
-	{
-		this.currentBet=currentBet;
-	}
 	public void setHand(Card temp) {
 		if (hand.size() < 5) {
 			hand.add(temp); // adds Cards to the arraylist
@@ -67,7 +55,6 @@ public class Player {
 		sortHand(getHand());
 		
 	}
-
 	public void setHandValue(HandRanking k, int v) // after the hand is ranked, each player gets a handValue.
 	{
 		this.handValue.put(k,v);
