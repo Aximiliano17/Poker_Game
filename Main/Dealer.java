@@ -8,6 +8,7 @@ public class Dealer {
 	private final int SMALLBLIND = 10;
 	private final int BIGBLIND = 20;
 	private final int MIN = 200;
+	private Deck deck;
 
 //Determines which players can play and stores them into allowedPlayers
 	public CircularArrayList<Player> determinePlayers(List<Player> players) {
@@ -20,7 +21,17 @@ public class Dealer {
 		}
 		return allowedPlayers;
 	}
-	public int addAnte(CircularArrayList<Player> players)
+	public void dealCards(CircularArrayList<Player> players) {
+		deck = Deck.getDeck();
+		// Assign each player cards from the deck
+		for (Player p : players) {
+			while (p.getHand().size() < 5) {
+				p.getCard(deck.dealCard());
+			}
+		}
+	}
+	//Collects ante from players and returns it.
+	public int collectAnte(CircularArrayList<Player> players)
 	{
 		int total=0;
 		for(Player p:players)
