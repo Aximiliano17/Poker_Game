@@ -22,25 +22,20 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 public class PlayPanel extends JPanel {
-	private List<Player> players;
-	private CircularArrayList<Player> allowedPlayers;
-	// Since clicking a button inside of a loop, I loose control of that loop,I used
-	// this variable to keep tracks of which player i'm currently accessing. It is
-	// global because inside of the anonymous classes, it requires to be final.
+	private CircularArrayList<Player> allowedPlayers;// circular arrayList
+
 	private TablePot tablePot;
 	private Dealer dealer;
-	private boolean betRound;//will be used to check which betting round im in
+	private boolean betRound;// will be used to check which betting round im in
 
 	public PlayPanel() {
-		this.players = new ArrayList<Player>(PokerGame.getPlayers());
-		dealer = new Dealer();
-		tablePot=new TablePot();
 		setUpTable();
 	}
 
 	public void setUpTable() {
-		allowedPlayers = dealer.determinePlayers(players);
-
+		dealer = new Dealer();
+		tablePot = new TablePot();
+		allowedPlayers = dealer.determinePlayers(PokerGame.getPlayers());
 		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		if (allowedPlayers.size() > 1 && allowedPlayers.size() < 7) {
 
@@ -79,16 +74,51 @@ public class PlayPanel extends JPanel {
 
 	// The ante gets money from each player before they get their cards.
 	public void ante() {
-		tablePot.addToMainPot(dealer.collectAnte(allowedPlayers));
+		int anteSum=dealer.collectAnte(allowedPlayers);
+		tablePot.addToMainPot(anteSum);// collect antes and add the amount to the main pot
 		
+		allowedPlayers.setUpButton();
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
-		JLabel anteMess = new JLabel("An ante of "+ dealer.getAnte()+" has been take from each player and added to the pot");
+		JLabel anteMess = new JLabel(
+				"An ante of " + dealer.getAnte() + " has been take from each player and added to the pot");
 		add(anteMess, gbc);
 		JButton continueButton = new JButton("Continue");
 		add(continueButton, gbc);
 		anteMess.setAlignmentX(Component.CENTER_ALIGNMENT);
+		continueButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+		continueButton.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				removeAll();
+				collectBlinds();
+				validate();
+				repaint();
+			}
+		});
+	}
+
+	public void collectBlinds() {
+		Player one = allowedPlayers.getBlindPlayer(1);
+		Player two = allowedPlayers.getBlindPlayer(2);
+		dealer.collectBlinds(one, two, tablePot);
+		//Lets say Player B has 15 coins left, he pays an ante of 10 and is chosen for the blind of 20. What happens is
+		//he is forced to go all in with 5 coins, so the current maxBid is set to the max of player B or the smallBlind player.
+		tablePot.increaseBid(Math.max(tablePot.getCurrentBet(one),tablePot.getCurrentBet(two)));
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridwidth = GridBagConstraints.REMAINDER;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		JLabel sBlindMess = new JLabel(
+				"A small blind of " + tablePot.getCurrentBet(one) + " has been taken from " + one.getName());
+		JLabel bBlindMess = new JLabel(
+				"A big blind of " + tablePot.getCurrentBet(two) + " has been taken from " + two.getName());
+		add(sBlindMess, gbc);
+		add(bBlindMess, gbc);
+		JButton continueButton = new JButton("Continue");
+		add(continueButton, gbc);
+		sBlindMess.setAlignmentX(Component.CENTER_ALIGNMENT);
+		bBlindMess.setAlignmentX(Component.CENTER_ALIGNMENT);
 		continueButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 		continueButton.addActionListener(new ActionListener() {
 			@Override
@@ -105,22 +135,37 @@ public class PlayPanel extends JPanel {
 	// Asks players one by one which cards they want to switch
 	public void switchCards(Player player) {
 		removeAll();
-		if (player != null) {
+		if (player != null&&player.isFolded()!=true) {
 			setLayout(new GridBagLayout());
 			GridBagConstraints gbc = new GridBagConstraints();
 			gbc.gridwidth = GridBagConstraints.REMAINDER;
 			gbc.fill = GridBagConstraints.HORIZONTAL;
-            JLabel mess =new JLabel("It is now the switch cards phase.");
+			JLabel mess = new JLabel("It is now the switch cards phase.");
 			JLabel message = new JLabel("It is " + player.getName() + "'s turn!");
 			JLabel message2 = new JLabel("You have the following cards. Choose to switch or skip.");
 			JButton next = new JButton("Next");
-			add(mess,gbc);
+			add(mess, gbc);
 			add(message, gbc);
 			add(message2, gbc);
 
 			// Make a JPanel for each card.
 			for (Card card : player.getHand()) {
-				JPanel hand = cardPanel(card, player);
+				JPanel hand = new JPanel();
+				JLabel display = new JLabel(card.toString());
+				JButton switchButton = new JButton("Switch");
+				switchButton.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						JButton button = (JButton) e.getSource();
+						JPanel panel = (JPanel) button.getParent();
+						player.removeCard(card);
+						remove(panel);
+						validate();
+						repaint();
+					}
+				});
+				hand.add(display);
+				hand.add(switchButton);
 				add(hand, gbc);
 			}
 			next.addActionListener(new ActionListener() {
@@ -145,24 +190,27 @@ public class PlayPanel extends JPanel {
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.gridwidth = GridBagConstraints.REMAINDER;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
-		if (player != null) {
+		if (player != null&&player.isFolded()!=true&&player.isAllIn()!=true) {
 			removeAll();
 			JLabel mess = new JLabel("Your cards have been dealt!");
 			add(mess, gbc);
 			JLabel turn = new JLabel("It is " + player.getName() + " turn");
 			add(turn, gbc);
-			JLabel pot = new JLabel("The current wager is of " + tablePot.getMaxBid() + " and the pot is " + tablePot.getMainPot());
+			JLabel pot = new JLabel(
+					"The current MaxBet is of " + tablePot.getMaxBid() + " and the pot is " + tablePot.getMainPot());
 			JLabel cards = new JLabel("These are your cards:");
 			JPanel hand = displayHand(player);
 			add(pot, gbc);
 			add(cards, gbc);
 			add(hand, gbc);
+			JLabel sideMess=new JLabel("Your current bet is of: "+ tablePot.getCurrentBet(player)); 
 			JLabel message = new JLabel("Your current money is:" + player.getMoney());
 			JPanel buttons = new JPanel();
-
+            add(sideMess,gbc);
 			add(message, gbc);
 			if (tablePot.getMaxBid() > tablePot.getCurrentBet(player)) {
-				JLabel call2 = new JLabel("Would you like to call: " + (tablePot.getMaxBid() - tablePot.getCurrentBet(player)));
+				JLabel call2 = new JLabel(
+						"Would you like to call: " + (tablePot.getMaxBid() - tablePot.getCurrentBet(player)));
 				JButton call = new JButton("Call");
 				call.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
@@ -200,14 +248,14 @@ public class PlayPanel extends JPanel {
 			});
 			buttons.add(fold);
 			add(buttons, gbc);
-		} else if(!betRound){
-			betRound=true;
+		} else if (!betRound) {
+			betRound = true;
 			tablePot.addToMainPot(tablePot.getBetsTotal());
 			allowedPlayers.reset();
-			switchCards(allowedPlayers.getNext());	
-		}else
-		{
+			switchCards(allowedPlayers.getNext());
+		} else {
 			tablePot.addToMainPot(tablePot.getBetsTotal());
+			allowedPlayers.reset();
 			displayWinner();
 			return;
 		}
@@ -249,34 +297,15 @@ public class PlayPanel extends JPanel {
 		return hand;
 	}
 
-	JPanel cardPanel(Card card, Player player) {
-		JPanel cards = new JPanel();
-		JLabel display = new JLabel(card.toString());
-		JButton switchButton = new JButton("Switch");
-		switchButton.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				JButton button = (JButton) e.getSource();
-				JPanel panel = (JPanel) button.getParent();
-				player.removeCard(card);
-				remove(panel);
-				validate();
-				repaint();
-			}
-		});
-		cards.add(display);
-		cards.add(switchButton);
-		return cards;
 
-	}
 
 	public void defaultWin() {
 		removeAll();
 		this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		JLabel winner = new JLabel("Since everyone else folded the winner is: " + allowedPlayers.get(0).getName());
-         tablePot.addToMainPot(tablePot.getBetsTotal());
+		tablePot.addToMainPot(tablePot.getBetsTotal());
 		JLabel winner2 = new JLabel(allowedPlayers.get(0).getName() + " has won " + tablePot.getMainPot() + " money");
-		
+
 		allowedPlayers.get(0).addMoney(tablePot.distributeMainPot());
 
 		winner.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -332,9 +361,9 @@ public class PlayPanel extends JPanel {
 
 	// resets all variables when a round is over
 	public void resetGame() {
-		tablePot=new TablePot();
+		tablePot = new TablePot();
 		Deck.discardDeck();
-		betRound=false;
+		betRound = false;
 		for (Player player : allowedPlayers) {
 			player.clearHand();
 			allowedPlayers.reset();
@@ -362,7 +391,7 @@ public class PlayPanel extends JPanel {
 						JLabel mess = new JLabel("Amount betting has been raised to" + tablePot.getMaxBid());
 						add(mess);
 						allowedPlayers.setEnd();
-						tablePot.setCurrentBet(allowedPlayers.getCurrPlayer(),amount2);
+						tablePot.setCurrentBet(allowedPlayers.getCurrPlayer(), amount2);
 						playerTurn(allowedPlayers.getNext());
 						validate();
 						repaint();
@@ -393,18 +422,10 @@ public class PlayPanel extends JPanel {
 		removeAll();
 		JLabel message = new JLabel(allowedPlayers.getCurrPlayer().getName() + " has folded");
 		add(message);
-
-		if (allowedPlayers.size() > 1) {
-			allowedPlayers.remove(allowedPlayers.getCurrPlayer());
+			allowedPlayers.getCurrPlayer().setFold();
 			playerTurn(allowedPlayers.getNext());
 			validate();
 			repaint();
-		}
-		if (allowedPlayers.size() == 1) {
-			defaultWin();
-			validate();
-			repaint();
-		}
 	}
 
 	public void call() {
@@ -412,7 +433,7 @@ public class PlayPanel extends JPanel {
 		int difference = tablePot.getMaxBid() - tablePot.getCurrentBet(allowedPlayers.getCurrPlayer());
 
 		if (allowedPlayers.getCurrPlayer().getMoney() >= difference) {
-			tablePot.setCurrentBet(allowedPlayers.getCurrPlayer(),difference);
+			tablePot.setCurrentBet(allowedPlayers.getCurrPlayer(), difference);
 			allowedPlayers.getCurrPlayer().substractMoney(difference);
 			JLabel message = new JLabel(allowedPlayers.getCurrPlayer().getName() + " has called");
 			add(message);
