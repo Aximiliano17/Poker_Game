@@ -9,17 +9,19 @@ package Main;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CircularArrayList<E> extends ArrayList<E>
+public class CircularArrayList<Player> extends ArrayList<Player>
 {
 private int end=super.size()-1;
-private int start=0;
-private boolean finished;
+private int start;
+//The button determines which players to collect the blinds and where to start each round.
+private int button=-1;
+private boolean finished;//marks the end of players turn, when someone raises it becomes false
 
 //Constructors
 public CircularArrayList(int i) {
 	super(i);
 }
-public CircularArrayList(List<E> list)
+public CircularArrayList(List<Player> list)
 {
 	super(list);
 }
@@ -28,7 +30,7 @@ public CircularArrayList()
 	super();
 }
 //Method to get the next player.Uses a boolean to mark the end of player.
-public E getNext()
+public Player getNext()
 {
 	if(finished)return null;//If it returns null, the program knows there isn't any more players.      	
 	if(start==super.size()) start=0;
@@ -36,7 +38,7 @@ public E getNext()
 		finished=true;//finished marks the end of our circular arraylist
 	}
 	
-	E player=super.get(start);
+	Player player=super.get(start);
 	start++;
 //	System.out.println(start+" "+end); test
 	return player;
@@ -62,7 +64,7 @@ public void setEnd()
 	finished=false;
 }
  //Since at the end of the getNext() and setNext() methods I increment start by one, the current player is at start-1
- public E getCurrPlayer()
+ public Player getCurrPlayer()
  {
 	 int current=start-1;
 	 if(current==-1)current=super.size()-1;
@@ -78,10 +80,28 @@ public void setEnd()
 	 return b;
  }
  @Override
- public boolean add(E p)
+ public boolean add(Player p)
  {
 	 boolean b=super.add(p);
 	 end=super.size()-1;
 	 return b; 
+ }
+ public void setUpButton()//increase button by one and sets start to button
+ {
+	 button++;
+	 if(button==super.size()) button=0;
+	 start=button;
+ }
+ public int getButton()
+ {
+	 return this.button;
+ }
+ public Player getBlindPlayer(int n)
+ {
+	 int index=button+n;
+	 if(index==super.size())index=0;
+	 else if(index==super.size()+1)index=1;
+	 Player p=super.get(index);
+	 return p;
  }
  }
