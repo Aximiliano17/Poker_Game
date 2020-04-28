@@ -1,11 +1,10 @@
 /**
- * This class keeps track of the mainPot, as well as each player sidePot. If placer C goes all in with 300, and player D
- * raises to 700, even if player C wins, he can't win more than 300 from each player.This feature is not yet implemented
- * but will be soon.
+ * This class keeps track of the mainPot, as well as each player sidePot. 
  */
 package Main;
 
 import java.util.HashMap;
+import java.util.List;
 
 public class TablePot {
 private int mainPot;
@@ -20,11 +19,15 @@ public int getMainPot()
 {
 	return mainPot;
 }
-public int distributeMainPot()//Method to give the whole amount to the winner/s.
+public void distributeMainPot(List<Player> winners)//Method to give the whole amount to the winner/s.
 {
-	int total=mainPot;
-	mainPot=mainPot-mainPot;
-	return total;
+ int count=winners.size();
+ int even=mainPot/count;
+ for(Player p:winners)
+ {
+	 p.addMoney(even);
+ }
+ mainPot=0;
 }
 public int getCurrentBet(Player player)
 {
