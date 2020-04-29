@@ -1,12 +1,13 @@
 
 package Main;
 
-import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import javax.swing.JFrame;
 
 public class PokerGame extends JFrame {
@@ -23,42 +24,39 @@ public class PokerGame extends JFrame {
 		game.setVisible(true);
 	}
 
+	@SuppressWarnings("unchecked")
 	public static void readData() {
-		String filename = ("data.txt");
-		Scanner inputStream = null;
-		try {
-			inputStream = new Scanner(new File(filename));
-		} catch (IOException e) {
-			System.out.println("Error opening file");
-		}
-		while (inputStream.hasNextLine()) {
-			String lineString = inputStream.nextLine();
-			String[] line = lineString.split("\\s+");
-			String first = line[0];
-			int second = Integer.parseInt(line[1].trim());
-			players.add(new Player(first, second));
-		}
-		System.out.println("Saved Data from file has been loaded");
+		try
+        {
+            FileInputStream fis = new FileInputStream("data.txt");
+            ObjectInputStream ois = new ObjectInputStream(fis);
+            players = (ArrayList<Player>) ois.readObject();
+            ois.close();
+            fis.close();
+         }catch(IOException ioe){
+        	 System.out.println("There are no current Players.");
+             return;
+          }
+		catch(ClassNotFoundException c){
+             System.out.println("Class not found");
+             c.printStackTrace();
+             return;
+          }
+
 	}
 
 	public static void saveData(List<Player> players) {
 		setPlayers(players);
-		String filename = ("data.txt");
-		PrintWriter outputStream = null;
 		try {
-			outputStream = new PrintWriter(filename);
-		} catch (IOException e) {
-			System.out.println("Error opening the file.");
-		}
-
-		for (int i = 0; i < players.size(); i++) {
-
-			outputStream.print(players.get(i).getName() + " ");
-			outputStream.print(players.get(i).getMoney());
-			outputStream.println();
-		}
-		outputStream.close();
-	}
+		   FileOutputStream fos= new FileOutputStream("data.txt");
+	         ObjectOutputStream oos= new ObjectOutputStream(fos);
+	         oos.writeObject(players);
+	         oos.close();
+	         fos.close();
+	       }catch(IOException ioe){
+	            ioe.printStackTrace();
+	        }
+	   }
 
 	public static List<Player> getPlayers() {
 		return players;
